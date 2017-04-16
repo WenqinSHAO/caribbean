@@ -256,6 +256,10 @@ class Ship extends Entity {
         }
     }
 
+    private void rotate() {
+
+    }
+
     public boolean overlap(Entity entity) {
         List<OffsetCoord> coords = getPositions();
         return coords.contains(entity.getCoord());
@@ -305,6 +309,7 @@ class Ship extends Entity {
         //          if nst not in visited and not nst.overlap() with any m in mines:
         //              queue.add(nst, [empty move, move], nst.distance(t))
         // return 'unreachable'
+        return null;
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
@@ -330,7 +335,7 @@ class Ship extends Entity {
     }
 
 
-    public void move(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels) {
+    public void move(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels, final List<Cannonball> cannonballs) {
 
         for (int i = 1; i <= MAX_SHIP_SPEED; i++) {
             if (i > this.getSpeed()) {
@@ -363,7 +368,7 @@ class Ship extends Entity {
                 }
             }
 
-            this.checkCollisions(mines, barrels);
+            this.checkCollisions(mines, barrels, cannonballs);
 
         }
     }
