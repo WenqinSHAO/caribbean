@@ -324,14 +324,8 @@ class Ship extends Entity {
             OffsetCoord coord = mine.getCoord();
             if (positions.contains(coord)) {
                 damage(Mine.MINE_DAMAGE);
-            } else {
-                for (OffsetCoord loc : positions) {
-                    if (loc.distance(coord) <= 1) {
-                        damage(Mine.NEAR_MINE_DAMAGE);
-                        break;
-                    }
-                }
             }
+            // TODO: to see whether mine will explode
         }
     }
 
