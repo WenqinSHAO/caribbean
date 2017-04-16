@@ -102,6 +102,13 @@ class OffsetCoord {
         return toCubic().distance(t.toCubic());
     }
 
+    @Override
+    public String toString() {
+        return "OffsetCoord{" +
+                "col=" + col +
+                ", row=" + row +
+                '}';
+    }
 }
 
 class MoveSequence {
@@ -227,6 +234,14 @@ class Entity {
         result = 31 * result + location.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "id=" + id +
+                ", location=" + location +
+                '}';
+    }
 }
 
 class Rum extends Entity {
@@ -350,11 +365,24 @@ class Ship extends Entity {
         return positions;
     }
 
+    /**
+     * compute new coordinates based on new direction and new position
+     * @return bow, position and stern positions
+     */
     public List<OffsetCoord> getNewPositions() {
         List<OffsetCoord> positions = new ArrayList<>();
-        positions.add(getNewCoord().neighbor(getNewDirection()));
-        positions.add(getNewCoord());
-        positions.add(getNewCoord().neighbor((getNewDirection() + 3) % 6));
+        OffsetCoord newCoord = getNewCoord();
+        if (newCoord == null) {
+            newCoord = getCoord();
+        }
+        int newOrientation = getNewDirection();
+        if (newOrientation == -1) {
+            newOrientation = getDirection();
+        }
+        // The ship has a new position
+        positions.add(newCoord.neighbor(newOrientation));
+        positions.add(newCoord);
+        positions.add(newCoord.neighbor((newOrientation + 3) % 6));
         return positions;
     }
 
@@ -548,9 +576,9 @@ class Ship extends Entity {
                 }
             }
 
+            this.setLocation(this.getNewCoord());
             this.checkCollisions(mines, barrels, cannonballs);
 
-            this.setLocation(this.getNewCoord());
             this.setNewCoord(null);
         }
     }
@@ -581,6 +609,16 @@ class Ship extends Entity {
         result = 31 * result + newDirection;
         result = 31 * result + (newCoord != null ? newCoord.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Ship{" +
+                "owner=" + owner +
+                ", quant=" + quant +
+                ", speed=" + speed +
+                ", direction=" + direction +
+                "} " + super.toString();
     }
 }
 
@@ -640,11 +678,10 @@ class Player {
                         best_mv = mv.getMoves();
                     }
                 }
-                if (best_mv.isEmpty()){
+                if (best_mv.isEmpty()) {
                     System.out.println("WAIT");
-                }
-                else {
-                    System.out.println(best_mv.get(best_mv.size()-1)); // Any valid action, such as "WAIT" or "MOVE x y"
+                } else {
+                    System.out.println(best_mv.get(best_mv.size() - 1)); // Any valid action, such as "WAIT" or "MOVE x y"
                 }
 
 
