@@ -330,7 +330,7 @@ class Ship extends Entity {
     }
 
 
-    private void move(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels) {
+    public void move(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels) {
 
         for (int i = 1; i <= MAX_SHIP_SPEED; i++) {
             if (i > this.getSpeed()) {
