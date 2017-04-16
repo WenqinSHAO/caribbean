@@ -29,11 +29,10 @@ class CubicCoord {
     }
 }
 
-// tucude and distance shall be implemented in coord classes
 class OffsetCoord {
 
-    private final static int[][] DIRECTIONS_EVEN = new int[][] { { 1, 0 }, { 0, -1 }, { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, 1 } };
-    private final static int[][] DIRECTIONS_ODD = new int[][] { { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 1 } };
+    private final static int[][] DIRECTIONS_EVEN = new int[][]{{1, 0}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}};
+    private final static int[][] DIRECTIONS_ODD = new int[][]{{1, 0}, {1, -1}, {0, -1}, {-1, 0}, {0, 1}, {1, 1}};
     private static final int MAP_WIDTH = 23;
     private static final int MAP_HEIGHT = 21;
 
@@ -92,6 +91,17 @@ class OffsetCoord {
         return col >= 0 && col < MAP_WIDTH && row >= 0 && row < MAP_HEIGHT;
     }
 
+    public CubicCoord toCubic() {
+        int x = this.col - (this.row - (this.col & 1)) / 2;
+        int z = this.row;
+        int y = -x - z;
+        return new CubicCoord(x, y, z);
+    }
+
+    public int distance(OffsetCoord t) {
+        return toCubic().distance(t.toCubic());
+    }
+
 }
 
 class Entity {
@@ -129,19 +139,8 @@ class Entity {
         this.location = loc;
     }
 
-    public int distance(Entity t) {
-        return toCubic().distance(t.toCubic());
-    }
-
     public OffsetCoord getCoord() {
         return location;
-    }
-
-    private CubicCoord toCubic() {
-        int x = getCol() - (getRow() - (getCol() & 1)) / 2;
-        int z = getRow();
-        int y = -x - z;
-        return new CubicCoord(x, y, z);
     }
 
 }
@@ -160,7 +159,7 @@ class Rum extends Entity {
     }
 }
 
-class Mine extends Entity{
+class Mine extends Entity {
     public Mine(int id, int col, int row) {
         super(id, col, row);
     }
@@ -169,6 +168,7 @@ class Mine extends Entity{
 class Ship extends Entity {
 
     public static final int MAX_SHIP_SPEED = 2;
+    public static final int MAX_SHIP_QUANT = 100;
     private int owner;
     private int quant;
     private int speed;
@@ -243,10 +243,6 @@ class Ship extends Entity {
         return false;
     }
 
-    public  boolean hitWall() {
-        // test if in current status, any part of the ship is outside the grid
-        // getPositions, then check
-    }
 
     public Ship nextStatus(String move) {
         switch (move) {
@@ -310,7 +306,7 @@ class Player {
             OffsetCoord newLocation = oldLocation.neighbor(ship.getDirection());
             int newSpeed = oldSpeed;
 
-            if (!newLocation.isInsideMap()){
+            if (!newLocation.isInsideMap()) {
                 newLocation = oldLocation;
                 newSpeed = 0;
             }
@@ -372,7 +368,7 @@ class Player {
                 Ship ship = ourship.get(i);
                 Rum nearest = null;
                 for (Rum rum : rums) {
-                    int distance = ship.distance(rum);
+                    int distance = ship.getCoord().distance(rum.getCoord());
                     if (distance < min) {
                         min = distance;
                         nearest = rum;
