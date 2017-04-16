@@ -104,7 +104,7 @@ class OffsetCoord {
 
 }
 
-class MoveSequence{
+class MoveSequence {
     private int gain;
     private List<Ship.Action> moves;
 
@@ -268,7 +268,7 @@ class Ship extends Entity {
     public static final int MAX_SHIP_QUANT = 100;
 
     public static enum Action {
-        FASTER, SLOWER, PORT, STARBOARD, FIRE, MINE
+        FASTER, SLOWER, PORT, STARBOARD, FIRE, MINE, EMPTY
     }
 
     private int owner;
@@ -457,12 +457,12 @@ class Ship extends Entity {
         boolean reachFlag = Boolean.FALSE;
 
         gain.put(this, 0);
-        lasthop.put(null, null);
+        lasthop.put(this, new StatusActionPair(this, Action.EMPTY));
         int ini_gain = t.getQuant() - this.getCoord().distance(t.getCoord());
         frontier.add(new StatusPriorityPair(this, ini_gain));
 
         Ship st = this;
-        while (! frontier.isEmpty()) {
+        while (!frontier.isEmpty()) {
             st = frontier.poll().getStatus();
             if (st.overlap(t)) {
                 reachFlag = Boolean.TRUE;
@@ -470,12 +470,13 @@ class Ship extends Entity {
             }
             for (Action mv : Action.values()) {
                 Ship nst = new Ship(st);
+                nst.damage(1);
                 nst.applyAction(mv);
                 nst.move(ships, mines, rums, balls);
                 nst.rotate(ships, mines, rums, balls);
                 if (nst.quant > 0) {
                     int nst_gain = nst.quant - this.quant;
-                    if (! gain.contains(nst) || nst_gain > gain.get(nst)) {
+                    if (!gain.contains(nst) || nst_gain > gain.get(nst)) {
                         gain.put(nst, nst_gain);
                         lasthop.put(nst, new StatusActionPair(st, mv));
                         int priority = nst_gain - nst.getCoord().distance(t.getCoord());
@@ -488,13 +489,12 @@ class Ship extends Entity {
         if (reachFlag == Boolean.TRUE) {
             int best_gain = gain.get(st);
             List<Action> move_seq = new ArrayList<>();
-            while (lasthop.get(st).getAction() != null) {
+            while (lasthop.get(st).getAction() != Action.EMPTY) {
                 move_seq.add(lasthop.get(st).getAction());
                 st = lasthop.get(st).getStatus();
             }
             return new MoveSequence(best_gain, move_seq);
-        }
-        else return new MoveSequence(0, new ArrayList<Action>());
+        } else return new MoveSequence(0, new ArrayList<Action>());
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
@@ -594,7 +594,10 @@ class Player {
         while (true) {
             // status
             List<Rum> rums = new ArrayList<>();
-            List<Ship> ourship = new ArrayList<>();
+            List<Ship> ourships = new ArrayList<>();
+            List<Ship> otherships = new ArrayList<>();
+            List<Mine> mines = new ArrayList<>();
+            List<Cannonball> cannonballs = new ArrayList<>();
 
             int myShipCount = in.nextInt(); // the number of remaining ships
             int entityCount = in.nextInt(); // the number of entities (e.g. ships, mines or cannonballs)
@@ -610,13 +613,16 @@ class Player {
                 switch (entityType) {
                     case "SHIP":
                         if (arg4 == 1) {
-                            ourship.add(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
+                            ourships.add(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
+                        } else {
+                            otherships.add(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
                         }
                         break;
                     case "BARREL":
                         rums.add(new Rum(entityId, x, y, arg1));
                         break;
                     case "MINE":
+                        mines.add(new Mine(entityId, x, y));
                         break;
                     case "CANNONBALL":
                         break;
@@ -624,23 +630,24 @@ class Player {
             }
 
             for (int i = 0; i < myShipCount; i++) {
-
-                // Write an action using System.out.println()
-                // To debug: System.err.println("Debug messages...");
-                int min = Integer.MAX_VALUE;
-                Ship ship = ourship.get(i);
-                Rum nearest = null;
+                Ship ship = ourships.get(i);
+                int max_gain = 0;
+                List<Ship.Action> best_mv = new ArrayList<>();
                 for (Rum rum : rums) {
-                    int distance = ship.getCoord().distance(rum.getCoord());
-                    if (distance < min) {
-                        min = distance;
-                        nearest = rum;
+                    MoveSequence mv = ship.bestPath(rum, otherships, rums, mines, cannonballs);
+                    if (mv.getGain() > max_gain) {
+                        max_gain = mv.getGain();
+                        best_mv = mv.getMoves();
                     }
                 }
-                if (nearest != null)
-                    System.out.println("MOVE " + nearest.getCol() + " " + nearest.getRow()); // Any valid action, such as "WAIT" or "MOVE x y"
-                else
+                if (best_mv.isEmpty()){
                     System.out.println("WAIT");
+                }
+                else {
+                    System.out.println(best_mv.get(best_mv.size()-1)); // Any valid action, such as "WAIT" or "MOVE x y"
+                }
+
+
             }
         }
     }
