@@ -210,6 +210,23 @@ class Entity {
         return location;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Entity entity = (Entity) o;
+
+        if (id != entity.id) return false;
+        return location.equals(entity.location);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + location.hashCode();
+        return result;
+    }
 }
 
 class Rum extends Entity {
@@ -267,10 +284,14 @@ class Ship extends Entity {
         this.quant = quant;
         this.speed = speed;
         this.direction = direction;
+        this.newCoord = null;
+        this.newDirection = -1;
     }
 
     public Ship(final Ship ship) {
         this(ship.getId(), ship.getCol(), ship.getRow(), ship.getOwner(), ship.getQuant(), ship.getSpeed(), ship.getDirection());
+        this.newCoord = ship.newCoord;
+        this.newDirection = ship.newDirection;
     }
 
     public int getOwner() {
@@ -351,7 +372,7 @@ class Ship extends Entity {
         }
     }
 
-    public void rotate(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels, final List<Cannonball> cannonballs) {
+    public void rotate(final Iterable<Ship> ships, final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
         if (this.getNewDirection() == -1) {
             return;
         }
@@ -498,8 +519,7 @@ class Ship extends Entity {
         }
     }
 
-
-    public void move(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels, final List<Cannonball> cannonballs) {
+    public void move(final Iterable<Ship> ships, final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
 
         for (int i = 1; i <= MAX_SHIP_SPEED; i++) {
             if (i > this.getSpeed()) {
@@ -535,6 +555,33 @@ class Ship extends Entity {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        Ship ship = (Ship) o;
+
+        if (owner != ship.owner) return false;
+        if (quant != ship.quant) return false;
+        if (speed != ship.speed) return false;
+        if (direction != ship.direction) return false;
+        if (newDirection != ship.newDirection) return false;
+        return newCoord != null ? newCoord.equals(ship.newCoord) : ship.newCoord == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + owner;
+        result = 31 * result + quant;
+        result = 31 * result + speed;
+        result = 31 * result + direction;
+        result = 31 * result + newDirection;
+        result = 31 * result + (newCoord != null ? newCoord.hashCode() : 0);
+        return result;
+    }
 }
 
 
