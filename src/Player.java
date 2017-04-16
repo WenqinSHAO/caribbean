@@ -160,8 +160,20 @@ class Rum extends Entity {
 }
 
 class Mine extends Entity {
+    public static final int MINE_DAMAGE = 25;
+    public static final int NEAR_MINE_DAMAGE = 10;
+
     public Mine(int id, int col, int row) {
         super(id, col, row);
+    }
+}
+
+class Cannonball extends Entity {
+    public Cannonball(int id, int col, int row) {
+        super(id, col, row);
+    }
+    public Cannonball(int id, OffsetCoord loc) {
+        super(id, loc);
     }
 }
 
@@ -230,6 +242,20 @@ class Ship extends Entity {
         return positions;
     }
 
+    private void damage(int damage) {
+        this.quant -= damage;
+        if (this.quant < 0) {
+            this.quant = 0;
+        }
+    }
+
+    private void heal(int val) {
+        this.quant += val;
+        if (this.quant > MAX_SHIP_QUANT) {
+            this.quant = MAX_SHIP_QUANT;
+        }
+    }
+
     public boolean overlap(Entity entity) {
         List<OffsetCoord> coords = getPositions();
         return coords.contains(entity.getCoord());
@@ -247,7 +273,6 @@ class Ship extends Entity {
         return false;
 
     }
-
     public void applyAction(Action move) {
         switch (move) {
             case PORT:
@@ -282,44 +307,77 @@ class Ship extends Entity {
         // return 'unreachable'
     }
 
-}
+    private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
 
-
-class Player {
-
-    List<Ship> ships;
-
-    private void moveShip(Ship ship) {
-        // ---
-        // Go forward
-        // ---
-        for (int i = 1; i <= Ship.MAX_SHIP_SPEED; i++) {
-            if (i > ship.getSpeed()) {
-                continue;
+        List<OffsetCoord> positions = getPositions();
+        // Compute potential gains
+        for (Iterator<Rum> it = barrels.iterator(); it.hasNext(); ) {
+            Rum barrel = it.next();
+            if (positions.contains(barrel.getCoord())) { // not using overlap to improve performance
+                heal(barrel.getQuant());
             }
+        }
 
-            OffsetCoord oldLocation = new OffsetCoord(ship.getCoord());
-            int oldSpeed = ship.getSpeed();
-            OffsetCoord newLocation = oldLocation.neighbor(ship.getDirection());
-            int newSpeed = oldSpeed;
-
-            if (!newLocation.isInsideMap()) {
-                newLocation = oldLocation;
-                newSpeed = 0;
-            }
-
-            ship.setLocation(newLocation);
-            ship.setSpeed(newSpeed);
-
-            // Check the current ship collides with other ships
-            for (Ship s : this.ships) {
-                if (ship.overlap(s)) {
-                    ship.setLocation(oldLocation);
-                    ship.setSpeed(0);
+        // Compute potential losses
+        for (Iterator<Mine> it = mines.iterator(); it.hasNext(); ) {
+            Mine mine = it.next();
+            OffsetCoord coord = mine.getCoord();
+            if (positions.contains(coord)) {
+                damage(Mine.MINE_DAMAGE);
+            } else {
+                for (OffsetCoord loc : positions) {
+                    if (loc.distance(coord) <= 1) {
+                        damage(Mine.NEAR_MINE_DAMAGE);
+                        break;
+                    }
                 }
             }
         }
     }
+
+
+    private void move(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels) {
+
+        for (int i = 1; i <= MAX_SHIP_SPEED; i++) {
+            if (i > this.getSpeed()) {
+                continue;
+            }
+
+            // Compute new location
+            OffsetCoord oldLocation = new OffsetCoord(this.getCoord());
+            int oldSpeed = this.getSpeed();
+            OffsetCoord newLocation = oldLocation.neighbor(this.getDirection());
+            int newSpeed = oldSpeed;
+
+            // If go out of the map, then stay at old location
+            if (newLocation.isInsideMap()) {
+                this.setLocation(newLocation);
+                this.setSpeed(newSpeed);
+            } else {
+                this.setLocation(oldLocation);
+                this.setSpeed(0);
+            }
+
+            // Check the current ship collides with other ships
+            // If collides with other ship
+            // stay at old location
+            for (Ship s : ships) {
+                if (this.overlap(s)) {
+                    this.setLocation(oldLocation);
+                    this.setSpeed(0);
+                    break;
+                }
+            }
+
+            this.checkCollisions(mines, barrels);
+
+        }
+    }
+
+}
+
+
+class Player {
 
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
