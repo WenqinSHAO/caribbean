@@ -69,4 +69,9 @@ public class CaribbeanTest {
         assertEquals(expect, ship);
     }
 
+    @Test
+    public void test_best_path() {
+        //TODO: make a test case for bestPath
+    }
+
 }
