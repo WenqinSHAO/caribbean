@@ -254,13 +254,13 @@ class Ship extends Entity {
                 this.direction = (this.direction + 1) % 6;
                 break;
             case STARBOARD:
-                this.direction = (direction - 1) % 6;
+                this.direction = (this.direction - 1) % 6;
                 break;
             case SLOWER:
-                this.setSpeed(Math.max(0, this.getSpeed() - 1));
+                this.speed = Math.max(0, this.speed - 1);
                 break;
             case FASTER:
-                this.setSpeed(Math.min(2, this.getSpeed() + 1));
+                this.speed = Math.min(2, this.speed + 1);
                 break;
             default:
                 break;
