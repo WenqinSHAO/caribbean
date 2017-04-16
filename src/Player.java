@@ -172,6 +172,7 @@ class Cannonball extends Entity {
     public Cannonball(int id, int col, int row) {
         super(id, col, row);
     }
+
     public Cannonball(int id, OffsetCoord loc) {
         super(id, loc);
     }
@@ -181,6 +182,7 @@ class Ship extends Entity {
 
     public static final int MAX_SHIP_SPEED = 2;
     public static final int MAX_SHIP_QUANT = 100;
+
     public static enum Action {
         FASTER, SLOWER, PORT, STARBOARD, FIRE, MINE
     }
@@ -189,6 +191,8 @@ class Ship extends Entity {
     private int quant;
     private int speed;
     private int direction;
+    private int newDirection;
+    private OffsetCoord newCoord;
 
     public Ship(int id, int col, int row, int owner, int quant, int speed, int direction) {
         super(id, col, row);
@@ -234,11 +238,35 @@ class Ship extends Entity {
         this.direction = direction;
     }
 
+    public int getNewDirection() {
+        return newDirection;
+    }
+
+    public void setNewDirection(int newDirection) {
+        this.newDirection = newDirection;
+    }
+
+    public OffsetCoord getNewCoord() {
+        return newCoord;
+    }
+
+    public void setNewCoord(OffsetCoord newLocation) {
+        this.newCoord = newLocation;
+    }
+
     public List<OffsetCoord> getPositions() {
         List<OffsetCoord> positions = new ArrayList<>();
         positions.add(getCoord().neighbor(direction));
         positions.add(getCoord());
         positions.add(getCoord().neighbor((direction + 3) % 6));
+        return positions;
+    }
+
+    public List<OffsetCoord> getNewPositions() {
+        List<OffsetCoord> positions = new ArrayList<>();
+        positions.add(getNewCoord().neighbor(getNewDirection()));
+        positions.add(getNewCoord());
+        positions.add(getNewCoord().neighbor((getNewDirection() + 3) % 6));
         return positions;
     }
 
@@ -256,8 +284,29 @@ class Ship extends Entity {
         }
     }
 
-    private void rotate() {
+    public void rotate(final Iterable<Ship> ships, final List<Mine> mines, final List<Rum> barrels, final List<Cannonball> cannonballs) {
+        if (this.getNewDirection() == -1) {
+            return;
+        }
+        // Check collisions
+        boolean collisionDetected = false;
 
+        for (Ship ship : ships) {
+            if (newCoordOverlap(ship)) {
+                collisionDetected = true;
+                break;
+            }
+        }
+
+        if (collisionDetected) {
+            this.setNewDirection(this.getDirection());
+            this.setSpeed(0);
+        }
+
+        // Apply rotation
+        this.setDirection(this.getNewDirection());
+        checkCollisions(mines, barrels, cannonballs);
+        this.setNewDirection(-1);
     }
 
     public boolean overlap(Entity entity) {
@@ -275,15 +324,32 @@ class Ship extends Entity {
             }
         }
         return false;
-
     }
+
+    public boolean newCoordOverlap(Entity entity) {
+        List<OffsetCoord> coords = getNewPositions();
+        return coords.contains(entity.getCoord());
+    }
+
+    public boolean newCoordOverlap(Ship entity) {
+        if (this.getId() != entity.getId()) {
+            List<OffsetCoord> positions = entity.getPositions();
+            for (OffsetCoord coord : getNewPositions()) {
+                if (positions.contains(coord)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public void applyAction(Action move) {
         switch (move) {
             case PORT:
-                this.direction = (this.direction + 1) % 6;
+                this.setNewDirection((this.direction + 1) % 6);
                 break;
             case STARBOARD:
-                this.direction = (this.direction - 1) % 6;
+                this.setNewDirection((this.direction - 1) % 6);
                 break;
             case SLOWER:
                 this.speed = Math.max(0, this.speed - 1);
@@ -342,18 +408,14 @@ class Ship extends Entity {
                 continue;
             }
 
+            this.setNewCoord(this.getCoord());
             // Compute new location
-            OffsetCoord oldLocation = new OffsetCoord(this.getCoord());
-            int oldSpeed = this.getSpeed();
-            OffsetCoord newLocation = oldLocation.neighbor(this.getDirection());
-            int newSpeed = oldSpeed;
+            OffsetCoord newCoord = this.getCoord().neighbor(this.getDirection());
 
             // If go out of the map, then stay at old location
-            if (newLocation.isInsideMap()) {
-                this.setLocation(newLocation);
-                this.setSpeed(newSpeed);
+            if (newCoord.isInsideMap()) {
+                this.setNewCoord(newCoord);
             } else {
-                this.setLocation(oldLocation);
                 this.setSpeed(0);
             }
 
@@ -362,7 +424,7 @@ class Ship extends Entity {
             // stay at old location
             for (Ship s : ships) {
                 if (this.overlap(s)) {
-                    this.setLocation(oldLocation);
+                    this.setNewCoord(getCoord());
                     this.setSpeed(0);
                     break;
                 }
@@ -370,6 +432,8 @@ class Ship extends Entity {
 
             this.checkCollisions(mines, barrels, cannonballs);
 
+            this.setLocation(this.getNewCoord());
+            this.setNewCoord(null);
         }
     }
 
