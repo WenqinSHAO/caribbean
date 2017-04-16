@@ -472,7 +472,7 @@ class Ship extends Entity {
                 Ship nst = new Ship(st);
                 nst.applyAction(mv);
                 nst.move(ships, mines, rums, balls);
-                nst.rotate();
+                nst.rotate(ships, mines, rums, balls);
                 if (nst.quant > 0) {
                     int nst_gain = nst.quant - this.quant;
                     if (! gain.contains(nst) || nst_gain > gain.get(nst)) {
