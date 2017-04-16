@@ -40,11 +40,11 @@ public class CaribbeanTest {
 
     @Test
     public void test_coord() {
-        OffsetCoord coord = new OffsetCoord(11, 10);
-        OffsetCoord coord1 = new OffsetCoord(16, 10);
+        OffsetCoord coord = new OffsetCoord(16, 10);
+        OffsetCoord coord1 = new OffsetCoord(11, 10);
         OffsetCoord coord2 = new OffsetCoord(12, 10);
-        assertEquals(5, coord.distance(coord1));
         assertEquals(4, coord.distance(coord2));
+        assertEquals(5, coord.distance(coord1));
     }
 
     @Test
