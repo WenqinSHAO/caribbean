@@ -104,6 +104,73 @@ class OffsetCoord {
 
 }
 
+class MoveSequence{
+    private int gain;
+    private List<Ship.Action> moves;
+
+    public MoveSequence(int gain, List<Ship.Action> moves) {
+        this.gain = gain;
+        this.moves = moves;
+    }
+
+    public int getGain() {
+        return gain;
+    }
+
+    public List<Ship.Action> getMoves() {
+        return moves;
+    }
+}
+
+class StatusActionPair {
+    private Ship status;
+    private Ship.Action action;
+
+    public StatusActionPair(Ship status, Ship.Action action) {
+        this.status = status;
+        this.action = action;
+    }
+
+    public Ship getStatus() {
+        return status;
+    }
+
+    public Ship.Action getAction() {
+        return action;
+    }
+}
+
+class StatusPriorityPair {
+    private Ship status;
+    private int priority;
+
+    public StatusPriorityPair(Ship status, int priority) {
+        this.status = status;
+        this.priority = priority;
+    }
+
+    public Ship getStatus() {
+        return status;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public static Comparator<StatusPriorityPair> GainComparator = new Comparator<StatusPriorityPair>() {
+        @Override
+        public int compare(StatusPriorityPair o1, StatusPriorityPair o2) {
+            if (o1.getPriority() > o2.getPriority()) {
+                return -1;
+            }
+            if (o1.getPriority() < o2.getPriority()) {
+                return 1;
+            }
+            return 0;
+        }
+    };
+}
+
 class Entity {
 
     private int id;
@@ -296,20 +363,51 @@ class Ship extends Entity {
         }
     }
 
-    public List<String> bestPath(OffsetCoord t, List<Mine> mines) {
-        // returns a squence of best move (PORT, STARBOARD,...) to reach the give destination t
-        // visited = set()
-        // queue =  PriorityQueue((self, [empty move], self.distance(t))) distance to t as priority function
-        // while queue:
-        //     st = queue.pop() gives the status (class Ship) with smallest distance
-        //     if st[0].overlap(t):
-        //         return st[1] that is the move squence
-        //     for move in [PORT, STARBOARD, SLOWER....]:
-        //          nst = st[0].nextStatus(move)
-        //          if nst not in visited and not nst.overlap() with any m in mines:
-        //              queue.add(nst, [empty move, move], nst.distance(t))
-        // return 'unreachable'
-        return null;
+    public MoveSequence bestPath(Rum t, List<Ship> ships, List<Rum> rums, List<Mine> mines, List<Cannonball> balls) {
+        Hashtable<Ship, Integer> gain = new Hashtable<>();
+        Hashtable<Ship, StatusActionPair> lasthop = new Hashtable<>();
+        PriorityQueue<StatusPriorityPair> frontier = new PriorityQueue<>(10, StatusPriorityPair.GainComparator);
+        boolean reachFlag = Boolean.FALSE;
+
+        gain.put(this, 0);
+        lasthop.put(null, null);
+        int ini_gain = t.getQuant() - this.getCoord().distance(t.getCoord());
+        frontier.add(new StatusPriorityPair(this, ini_gain));
+
+        Ship st = this;
+        while (! frontier.isEmpty()) {
+            st = frontier.poll().getStatus();
+            if (st.overlap(t)) {
+                reachFlag = Boolean.TRUE;
+                break;
+            }
+            for (Action mv : Action.values()) {
+                Ship nst = new Ship(st);
+                nst.applyAction(mv);
+                nst.move(ships, mines, rums, balls);
+                nst.rotate();
+                if (nst.quant > 0) {
+                    int nst_gain = nst.quant - this.quant;
+                    if (! gain.contains(nst) || nst_gain > gain.get(nst)) {
+                        gain.put(nst, nst_gain);
+                        lasthop.put(nst, new StatusActionPair(st, mv));
+                        int priority = nst_gain - nst.getCoord().distance(t.getCoord());
+                        frontier.add(new StatusPriorityPair(nst, priority));
+                    }
+                }
+            }
+        }
+
+        if (reachFlag == Boolean.TRUE) {
+            int best_gain = gain.get(st);
+            List<Action> move_seq = new ArrayList<>();
+            while (lasthop.get(st).getAction() != null) {
+                move_seq.add(lasthop.get(st).getAction());
+                st = lasthop.get(st).getStatus();
+            }
+            return new MoveSequence(best_gain, move_seq);
+        }
+        else return new MoveSequence(0, new ArrayList<Action>());
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
