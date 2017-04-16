@@ -169,6 +169,10 @@ class Ship extends Entity {
 
     public static final int MAX_SHIP_SPEED = 2;
     public static final int MAX_SHIP_QUANT = 100;
+    public static enum Action {
+        FASTER, SLOWER, PORT, STARBOARD, FIRE, MINE
+    }
+
     private int owner;
     private int quant;
     private int speed;
@@ -241,29 +245,22 @@ class Ship extends Entity {
             }
         }
         return false;
+
     }
 
-
-    public Ship nextStatus(String move) {
+    public void applyAction(Action move) {
         switch (move) {
-            case "PORT":
-                // direction = (direction + 1) % 6
-                // move at previous speed in the new direction, that is change direction, then change col, row
+            case PORT:
+                this.direction = (this.direction + 1) % 6;
                 break;
-            case "STARBOARD":
-                // direction = (direction - 1) % 6
-                // change direction first, then change row
+            case STARBOARD:
+                this.direction = (this.direction - 1) % 6;
                 break;
-            case "SLOWER":
-                // speed = max(0, speed - 1)
-                // move at new speed in the same direction, that is change col, row alone
+            case SLOWER:
+                this.speed = Math.max(0, this.speed - 1);
                 break;
-            case "FASTER":
-                // speed = min(2, speed -1)
-                // move at new speed in the same direction, that is change col, row alone
-                break;
-            case "WAIT":
-                // move at same speed in the same direction
+            case FASTER:
+                this.speed = Math.min(2, this.speed + 1);
                 break;
             default:
                 break;
