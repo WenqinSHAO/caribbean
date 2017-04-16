@@ -39,6 +39,15 @@ public class CaribbeanTest {
     }
 
     @Test
+    public void test_coord() {
+        OffsetCoord coord = new OffsetCoord(11, 10);
+        OffsetCoord coord1 = new OffsetCoord(16, 10);
+        OffsetCoord coord2 = new OffsetCoord(12, 10);
+        assertEquals(5, coord.distance(coord1));
+        assertEquals(4, coord.distance(coord2));
+    }
+
+    @Test
     public void test_ship_faster() {
         Ship ship = new Ship(0, 11, 10, 0, 50, 1, 0);
         addShip(ship);
@@ -93,6 +102,18 @@ public class CaribbeanTest {
         exp.setLocation(13, 10);
         exp.setDirection(1);
         assertEquals(exp, ship);
+    }
+
+    @Test
+    public void test_path_simple() {
+        Ship ship = new Ship(0, 11, 10, 0, 50, 0, 0);
+        Rum rum = new Rum(1, 16, 10, 30);
+        /*
+        (11, 10) - FASTER - (12, 10) - FASTER - (14, 10) - WAIT - (16, 10)
+         */
+        MoveSequence path = ship.bestPath(rum, ships, barrels, mines, cannonballs);
+        List<Ship.Action> moves = path.getMoves();
+        assertEquals(3, moves.size());
     }
 
     @Test

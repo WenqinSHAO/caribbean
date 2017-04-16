@@ -442,11 +442,6 @@ class Ship extends Entity {
         return false;
     }
 
-    public boolean newCoordOverlap(Entity entity) {
-        List<OffsetCoord> coords = getNewPositions();
-        return coords.contains(entity.getCoord());
-    }
-
     public boolean newCoordOverlap(Ship entity) {
         if (this.getId() != entity.getId()) {
             List<OffsetCoord> positions = entity.getPositions();
@@ -478,22 +473,22 @@ class Ship extends Entity {
         }
     }
 
-    public MoveSequence bestPath(Rum t, List<Ship> ships, List<Rum> rums, List<Mine> mines, List<Cannonball> balls) {
+    public MoveSequence bestPath(Rum t, Iterable<Ship> ships, Iterable<Rum> rums, Iterable<Mine> mines, Iterable<Cannonball> balls) {
         Hashtable<Ship, Integer> gain = new Hashtable<>();
-        Hashtable<Ship, StatusActionPair> lasthop = new Hashtable<>();
+        Hashtable<Ship, StatusActionPair> lastHop = new Hashtable<>();
         PriorityQueue<StatusPriorityPair> frontier = new PriorityQueue<>(10, StatusPriorityPair.GainComparator);
-        boolean reachFlag = Boolean.FALSE;
+        boolean reached = false;
 
         gain.put(this, 0);
-        lasthop.put(this, new StatusActionPair(this, Action.EMPTY));
-        int ini_gain = t.getQuant() - this.getCoord().distance(t.getCoord());
-        frontier.add(new StatusPriorityPair(this, ini_gain));
+        lastHop.put(this, new StatusActionPair(this, Action.EMPTY));
+        int iniGain = t.getQuant() - this.getCoord().distance(t.getCoord());
+        frontier.add(new StatusPriorityPair(this, iniGain));
 
         Ship st = this;
         while (!frontier.isEmpty()) {
             st = frontier.poll().getStatus();
             if (st.overlap(t)) {
-                reachFlag = Boolean.TRUE;
+                reached = true;
                 break;
             }
             for (Action mv : Action.values()) {
@@ -503,26 +498,26 @@ class Ship extends Entity {
                 nst.move(ships, mines, rums, balls);
                 nst.rotate(ships, mines, rums, balls);
                 if (nst.quant > 0) {
-                    int nst_gain = nst.quant - this.quant;
-                    if (!gain.contains(nst) || nst_gain > gain.get(nst)) {
-                        gain.put(nst, nst_gain);
-                        lasthop.put(nst, new StatusActionPair(st, mv));
-                        int priority = nst_gain - nst.getCoord().distance(t.getCoord());
+                    int nstGain = nst.quant - this.quant;
+                    if (!gain.contains(nst) || nstGain > gain.get(nst)) {
+                        gain.put(nst, nstGain);
+                        lastHop.put(nst, new StatusActionPair(st, mv));
+                        int priority = nstGain - nst.getCoord().distance(t.getCoord());
                         frontier.add(new StatusPriorityPair(nst, priority));
                     }
                 }
             }
         }
 
-        if (reachFlag == Boolean.TRUE) {
-            int best_gain = gain.get(st);
-            List<Action> move_seq = new ArrayList<>();
-            while (lasthop.get(st).getAction() != Action.EMPTY) {
-                move_seq.add(lasthop.get(st).getAction());
-                st = lasthop.get(st).getStatus();
+        if (reached) {
+            int bestGain = gain.get(st);
+            List<Action> moves = new ArrayList<>();
+            while (lastHop.get(st).getAction() != Action.EMPTY) {
+                moves.add(lastHop.get(st).getAction());
+                st = lastHop.get(st).getStatus();
             }
-            return new MoveSequence(best_gain, move_seq);
-        } else return new MoveSequence(0, new ArrayList<Action>());
+            return new MoveSequence(bestGain, moves);
+        } else return new MoveSequence(0, new ArrayList<>());
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
