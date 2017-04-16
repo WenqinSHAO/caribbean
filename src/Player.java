@@ -44,6 +44,11 @@ class OffsetCoord {
         this.row = row;
     }
 
+    public OffsetCoord(final OffsetCoord coord) {
+        this.col = coord.col;
+        this.row = coord.row;
+    }
+
     public int getCol() {
         return col;
     }
@@ -82,9 +87,10 @@ class OffsetCoord {
         return new OffsetCoord(newCol, newRow);
     }
 
-    boolean isInsideMap() {
+    public boolean isInsideMap() {
         return col >= 0 && col < MAP_WIDTH && row >= 0 && row < MAP_HEIGHT;
     }
+
 }
 
 class Entity {
@@ -219,10 +225,12 @@ class Ship extends Entity {
     }
 
     public boolean overlap(Ship entity) {
-        List<OffsetCoord> positions = entity.getPositions();
-        for (OffsetCoord coord : getPositions()) {
-            if (positions.contains(coord)) {
-                return true;
+        if (this.getId() != entity.getId()) {
+            List<OffsetCoord> positions = entity.getPositions();
+            for (OffsetCoord coord : getPositions()) {
+                if (positions.contains(coord)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -240,42 +248,29 @@ class Player {
         // Go forward
         // ---
         for (int i = 1; i <= Ship.MAX_SHIP_SPEED; i++) {
-            final Ship original = new Ship(ship);
             if (i > ship.getSpeed()) {
                 continue;
             }
 
-            OffsetCoord newCoordinate = ship.toCoord().neighbor(ship.getDirection());
-            if (newCoordinate.isInsideMap()) {
-                // Set new coordinate.
-                ship.setCol(newCoordinate.getCol());
-                ship.setRow(newCoordinate.getRow());
-            } else {
-                // Stop ship!
-                ship.setSpeed(0);
+            OffsetCoord oldLocation = new OffsetCoord(ship.getCoord());
+            int oldSpeed = ship.getSpeed();
+            OffsetCoord newLocation = oldLocation.neighbor(ship.getDirection());
+            int newSpeed = oldSpeed;
+
+            if (!newLocation.isInsideMap()){
+                newLocation = oldLocation;
+                newSpeed = 0;
             }
 
-            // Check ship and obstacles collisions
-            List<Ship> collisions = new ArrayList<>();
-            boolean collisionDetected = true;
-            while (collisionDetected) {
-                collisionDetected = false;
+            ship.setLocation(newLocation);
+            ship.setSpeed(newSpeed);
 
-                for (Ship s : this.ships) {
-                    if (ship.getId() != s.getId() && ship.overlap(s)) {
-                        collisions.add(ship);
-                    }
-                }
-
-                for (Ship s : collisions) {
-                    // Revert last move
-                    ship.setRow(original.getRow());
-                    ship.setCol(original.getCol());
-                    ship.setDirection(original.getDirection());
+            // Check the current ship collides with other ships
+            for (Ship s : this.ships) {
+                if (ship.overlap(s)) {
+                    ship.setLocation(oldLocation);
                     ship.setSpeed(0);
-                    collisionDetected = true;
                 }
-                collisions.clear();
             }
         }
     }
