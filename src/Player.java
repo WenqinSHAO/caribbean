@@ -102,6 +102,13 @@ class OffsetCoord {
         return toCubic().distance(t.toCubic());
     }
 
+    @Override
+    public String toString() {
+        return "OffsetCoord{" +
+                "col=" + col +
+                ", row=" + row +
+                '}';
+    }
 }
 
 class MoveSequence {
@@ -227,6 +234,14 @@ class Entity {
         result = 31 * result + location.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "id=" + id +
+                ", location=" + location +
+                '}';
+    }
 }
 
 class Rum extends Entity {
@@ -350,11 +365,24 @@ class Ship extends Entity {
         return positions;
     }
 
+    /**
+     * compute new coordinates based on new direction and new position
+     * @return bow, position and stern positions
+     */
     public List<OffsetCoord> getNewPositions() {
         List<OffsetCoord> positions = new ArrayList<>();
-        positions.add(getNewCoord().neighbor(getNewDirection()));
-        positions.add(getNewCoord());
-        positions.add(getNewCoord().neighbor((getNewDirection() + 3) % 6));
+        OffsetCoord newCoord = getNewCoord();
+        if (newCoord == null) {
+            newCoord = getCoord();
+        }
+        int newOrientation = getNewDirection();
+        if (newOrientation == -1) {
+            newOrientation = getDirection();
+        }
+        // The ship has a new position
+        positions.add(newCoord.neighbor(newOrientation));
+        positions.add(newCoord);
+        positions.add(newCoord.neighbor((newOrientation + 3) % 6));
         return positions;
     }
 
@@ -414,11 +442,6 @@ class Ship extends Entity {
         return false;
     }
 
-    public boolean newCoordOverlap(Entity entity) {
-        List<OffsetCoord> coords = getNewPositions();
-        return coords.contains(entity.getCoord());
-    }
-
     public boolean newCoordOverlap(Ship entity) {
         if (this.getId() != entity.getId()) {
             List<OffsetCoord> positions = entity.getPositions();
@@ -450,22 +473,22 @@ class Ship extends Entity {
         }
     }
 
-    public MoveSequence bestPath(Rum t, List<Ship> ships, List<Rum> rums, List<Mine> mines, List<Cannonball> balls) {
+    public MoveSequence bestPath(Rum t, Iterable<Ship> ships, Iterable<Rum> rums, Iterable<Mine> mines, Iterable<Cannonball> balls) {
         Hashtable<Ship, Integer> gain = new Hashtable<>();
-        Hashtable<Ship, StatusActionPair> lasthop = new Hashtable<>();
+        Hashtable<Ship, StatusActionPair> lastHop = new Hashtable<>();
         PriorityQueue<StatusPriorityPair> frontier = new PriorityQueue<>(10, StatusPriorityPair.GainComparator);
-        boolean reachFlag = Boolean.FALSE;
+        boolean reached = false;
 
         gain.put(this, 0);
-        lasthop.put(this, new StatusActionPair(this, Action.EMPTY));
-        int ini_gain = t.getQuant() - this.getCoord().distance(t.getCoord());
-        frontier.add(new StatusPriorityPair(this, ini_gain));
+        lastHop.put(this, new StatusActionPair(this, Action.EMPTY));
+        int iniGain = t.getQuant() - this.getCoord().distance(t.getCoord());
+        frontier.add(new StatusPriorityPair(this, iniGain));
 
         Ship st = this;
         while (!frontier.isEmpty()) {
             st = frontier.poll().getStatus();
             if (st.overlap(t)) {
-                reachFlag = Boolean.TRUE;
+                reached = true;
                 break;
             }
             for (Action mv : Action.values()) {
@@ -475,26 +498,26 @@ class Ship extends Entity {
                 nst.move(ships, mines, rums, balls);
                 nst.rotate(ships, mines, rums, balls);
                 if (nst.quant > 0) {
-                    int nst_gain = nst.quant - this.quant;
-                    if (!gain.contains(nst) || nst_gain > gain.get(nst)) {
-                        gain.put(nst, nst_gain);
-                        lasthop.put(nst, new StatusActionPair(st, mv));
-                        int priority = nst_gain - nst.getCoord().distance(t.getCoord());
+                    int nstGain = nst.quant - this.quant;
+                    if (!gain.contains(nst) || nstGain > gain.get(nst)) {
+                        gain.put(nst, nstGain);
+                        lastHop.put(nst, new StatusActionPair(st, mv));
+                        int priority = nstGain - nst.getCoord().distance(t.getCoord());
                         frontier.add(new StatusPriorityPair(nst, priority));
                     }
                 }
             }
         }
 
-        if (reachFlag == Boolean.TRUE) {
-            int best_gain = gain.get(st);
-            List<Action> move_seq = new ArrayList<>();
-            while (lasthop.get(st).getAction() != Action.EMPTY) {
-                move_seq.add(lasthop.get(st).getAction());
-                st = lasthop.get(st).getStatus();
+        if (reached) {
+            int bestGain = gain.get(st);
+            List<Action> moves = new ArrayList<>();
+            while (lastHop.get(st).getAction() != Action.EMPTY) {
+                moves.add(lastHop.get(st).getAction());
+                st = lastHop.get(st).getStatus();
             }
-            return new MoveSequence(best_gain, move_seq);
-        } else return new MoveSequence(0, new ArrayList<Action>());
+            return new MoveSequence(bestGain, moves);
+        } else return new MoveSequence(0, new ArrayList<>());
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
@@ -548,9 +571,9 @@ class Ship extends Entity {
                 }
             }
 
+            this.setLocation(this.getNewCoord());
             this.checkCollisions(mines, barrels, cannonballs);
 
-            this.setLocation(this.getNewCoord());
             this.setNewCoord(null);
         }
     }
@@ -581,6 +604,16 @@ class Ship extends Entity {
         result = 31 * result + newDirection;
         result = 31 * result + (newCoord != null ? newCoord.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Ship{" +
+                "owner=" + owner +
+                ", quant=" + quant +
+                ", speed=" + speed +
+                ", direction=" + direction +
+                "} " + super.toString();
     }
 }
 
@@ -640,11 +673,10 @@ class Player {
                         best_mv = mv.getMoves();
                     }
                 }
-                if (best_mv.isEmpty()){
+                if (best_mv.isEmpty()) {
                     System.out.println("WAIT");
-                }
-                else {
-                    System.out.println(best_mv.get(best_mv.size()-1)); // Any valid action, such as "WAIT" or "MOVE x y"
+                } else {
+                    System.out.println(best_mv.get(best_mv.size() - 1)); // Any valid action, such as "WAIT" or "MOVE x y"
                 }
 
 

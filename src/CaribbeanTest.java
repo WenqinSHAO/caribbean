@@ -39,6 +39,15 @@ public class CaribbeanTest {
     }
 
     @Test
+    public void test_coord() {
+        OffsetCoord coord = new OffsetCoord(16, 10);
+        OffsetCoord coord1 = new OffsetCoord(11, 10);
+        OffsetCoord coord2 = new OffsetCoord(12, 10);
+        assertEquals(4, coord.distance(coord2));
+        assertEquals(5, coord.distance(coord1));
+    }
+
+    @Test
     public void test_ship_faster() {
         Ship ship = new Ship(0, 11, 10, 0, 50, 1, 0);
         addShip(ship);
@@ -47,6 +56,12 @@ public class CaribbeanTest {
         ship.applyAction(Ship.Action.FASTER);
         assertEquals(expect, ship);
         ship.move(ships, mines, barrels, cannonballs);
+        expect.setDirection(0);
+        expect.setLocation(13, 10);
+        expect.setQuant(50);
+        assertEquals(expect, ship);
+        ship.rotate(ships, mines, barrels, cannonballs);
+        assertEquals(expect, ship);
 
         ship = new Ship(0, 11, 10, 0, 50, 2, 0);
         expect = new Ship(ship);
@@ -61,12 +76,44 @@ public class CaribbeanTest {
         expect.setSpeed(1);
         ship.applyAction(Ship.Action.SLOWER);
         assertEquals(expect, ship);
+        ship.move(ships, mines, barrels, cannonballs);
+        expect.setDirection(0);
+        expect.setLocation(12, 10);
+        expect.setQuant(50);
+        assertEquals(expect, ship);
+        ship.rotate(ships, mines, barrels, cannonballs);
+        assertEquals(expect, ship);
 
         ship = new Ship(0, 11, 10, 0, 50, 0, 0);
         expect = new Ship(ship);
         expect.setSpeed(0);
         ship.applyAction(Ship.Action.SLOWER);
         assertEquals(expect, ship);
+    }
+
+    @Test
+    public void test_port() {
+        Ship ship = new Ship(0, 11, 10, 0, 50, 2, 0);
+        ship.applyAction(Ship.Action.PORT);
+        assertEquals(0, ship.getDirection());
+        ship.move(ships, mines, barrels, cannonballs);
+        ship.rotate(ships, mines, barrels, cannonballs);
+        Ship exp = new Ship(ship);
+        exp.setLocation(13, 10);
+        exp.setDirection(1);
+        assertEquals(exp, ship);
+    }
+
+    @Test
+    public void test_path_simple() {
+        Ship ship = new Ship(0, 11, 10, 0, 50, 0, 0);
+        Rum rum = new Rum(1, 16, 10, 30);
+        /*
+        (11, 10) - FASTER - (12, 10) - FASTER - (14, 10) - WAIT - (16, 10)
+         */
+        MoveSequence path = ship.bestPath(rum, ships, barrels, mines, cannonballs);
+        List<Ship.Action> moves = path.getMoves();
+        assertEquals(3, moves.size());
     }
 
     @Test
