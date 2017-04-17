@@ -31,6 +31,7 @@ class CubicCoord {
 
 class OffsetCoord {
 
+    // "odd-r" horizontal layout
     private final static int[][] DIRECTIONS_EVEN = new int[][]{{1, 0}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}};
     private final static int[][] DIRECTIONS_ODD = new int[][]{{1, 0}, {1, -1}, {0, -1}, {-1, 0}, {0, 1}, {1, 1}};
     private static final int MAP_WIDTH = 23;
@@ -92,7 +93,7 @@ class OffsetCoord {
     }
 
     public CubicCoord toCubic() {
-        int x = this.col - (this.row - (this.col & 1)) / 2;
+        int x = this.col - (this.row - (this.row & 1)) / 2;
         int z = this.row;
         int y = -x - z;
         return new CubicCoord(x, y, z);
