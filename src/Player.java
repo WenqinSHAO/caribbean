@@ -503,7 +503,7 @@ class Ship extends Entity {
                 this.setNewDirection((this.direction + 1) % 6);
                 break;
             case STARBOARD:
-                this.setNewDirection((this.direction - 1) % 6);
+                this.setNewDirection((this.direction + 6 - 1) % 6);
                 break;
             case SLOWER:
                 this.speed = Math.max(0, this.speed - 1);
