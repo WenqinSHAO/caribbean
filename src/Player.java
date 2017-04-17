@@ -278,6 +278,44 @@ class Cannonball extends Entity {
     }
 }
 
+
+class ShipMoveStatus extends Entity{
+    private int speed;
+    private int direction;
+
+    public ShipMoveStatus(int id, int col, int row, int speed, int direction) {
+        super(id, col, row);
+        this.speed = speed;
+        this.direction = direction;
+    }
+
+    public ShipMoveStatus(int id, OffsetCoord loc, int speed, int direction) {
+        super(id, loc);
+        this.speed = speed;
+        this.direction = direction;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ShipMoveStatus that = (ShipMoveStatus) o;
+
+        if (speed != that.speed) return false;
+        return direction == that.direction;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + speed;
+        result = 31 * result + direction;
+        return result;
+    }
+}
+
 class Ship extends Entity {
 
     public static final int MAX_SHIP_SPEED = 2;
@@ -308,6 +346,10 @@ class Ship extends Entity {
         this(ship.getId(), ship.getCol(), ship.getRow(), ship.getOwner(), ship.getQuant(), ship.getSpeed(), ship.getDirection());
         this.newCoord = ship.newCoord;
         this.newDirection = ship.newDirection;
+    }
+
+    private ShipMoveStatus getMoveStatus() {
+        return new ShipMoveStatus(this.getId(), this.getCoord(), this.speed, this.direction);
     }
 
     public int getOwner() {
@@ -475,15 +517,15 @@ class Ship extends Entity {
     }
 
     public MoveSequence bestPath(Rum t, Iterable<Ship> ships, Iterable<Rum> rums, Iterable<Mine> mines, Iterable<Cannonball> balls) {
-        Hashtable<Ship, Integer> gain = new Hashtable<>();
+        Hashtable<ShipMoveStatus, Integer> gain = new Hashtable<>();
         Hashtable<Ship, StatusActionPair> lastHop = new Hashtable<>();
         PriorityQueue<StatusPriorityPair> frontier = new PriorityQueue<>(10, StatusPriorityPair.GainComparator);
         boolean reached = false;
 
-        gain.put(this, 0);
+        gain.put(this.getMoveStatus(), 0);
         lastHop.put(this, new StatusActionPair(this, Action.EMPTY));
-        int iniGain = t.getQuant() - this.getCoord().distance(t.getCoord());
-        frontier.add(new StatusPriorityPair(this, iniGain));
+        int iniPriority = 0 - this.getCoord().distance(t.getCoord());
+        frontier.add(new StatusPriorityPair(this, iniPriority));
 
         Ship st = this;
         while (!frontier.isEmpty()) {
@@ -500,8 +542,8 @@ class Ship extends Entity {
                 nst.rotate(ships, mines, rums, balls);
                 if (nst.quant > 0) {
                     int nstGain = nst.quant - this.quant;
-                    if (!gain.contains(nst) || nstGain > gain.get(nst)) {
-                        gain.put(nst, nstGain);
+                    if (!gain.containsKey(nst.getMoveStatus()) || nstGain > gain.get(nst.getMoveStatus())) {
+                        gain.put(nst.getMoveStatus(), nstGain);
                         lastHop.put(nst, new StatusActionPair(st, mv));
                         int priority = nstGain - nst.getCoord().distance(t.getCoord());
                         frontier.add(new StatusPriorityPair(nst, priority));
@@ -511,14 +553,15 @@ class Ship extends Entity {
         }
 
         if (reached) {
-            int bestGain = gain.get(st);
+            int bestGain = t.getQuant() + gain.get(st.getMoveStatus());
             List<Action> moves = new ArrayList<>();
             while (lastHop.get(st).getAction() != Action.EMPTY) {
                 moves.add(lastHop.get(st).getAction());
                 st = lastHop.get(st).getStatus();
             }
+            Collections.reverse(moves);
             return new MoveSequence(bestGain, moves);
-        } else return new MoveSequence(0, new ArrayList<>());
+        } else return new MoveSequence(0, new ArrayList<Action>());
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
@@ -677,7 +720,7 @@ class Player {
                 if (best_mv.isEmpty()) {
                     System.out.println("WAIT");
                 } else {
-                    System.out.println(best_mv.get(best_mv.size() - 1)); // Any valid action, such as "WAIT" or "MOVE x y"
+                    System.out.println(best_mv.get(0)); // Any valid action, such as "WAIT" or "MOVE x y"
                 }
 
 

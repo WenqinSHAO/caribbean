@@ -105,6 +105,19 @@ public class CaribbeanTest {
     }
 
     @Test
+    public void test_starboard() {
+        Ship ship = new Ship(0, 11, 10, 0, 50, 2, 0);
+        ship.applyAction(Ship.Action.STARBOARD);
+        assertEquals(0, ship.getDirection());
+        ship.move(ships, mines, barrels, cannonballs);
+        ship.rotate(ships, mines, barrels, cannonballs);
+        Ship exp = new Ship(ship);
+        exp.setLocation(13, 10);
+        exp.setDirection(5);
+        assertEquals(exp, ship);
+    }
+
+    @Test
     public void test_path_simple() {
         Ship ship = new Ship(0, 11, 10, 0, 50, 0, 0);
         Rum rum = new Rum(1, 16, 10, 30);
