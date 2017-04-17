@@ -134,9 +134,30 @@ public class CaribbeanTest {
         /*
         (11, 10) - FASTER - (12, 10) - FASTER - (14, 10) - WAIT - (16, 10)
          */
-        MoveSequence path = ship.bestPath(rum, ships, barrels, mines, cannonballs);
+        MoveSequence path = ship.bestPath(rum.getCoord(), ships, barrels, mines, cannonballs);
         List<Ship.Action> moves = path.getMoves();
         assertEquals(3, moves.size());
+
+        ship = new Ship(0, 1, 10, 0, 50, 0, 0);
+        rum = new Rum(1, 1, 11, 30);
+        /*
+        BOARD
+         */
+        path = ship.bestPath(rum.getCoord(), ships, barrels, mines, cannonballs);
+        moves = path.getMoves();
+        assertEquals(1, moves.size());
+        assertEquals(Ship.Action.STARBOARD, moves.get(0));
+
+        // Ship has an initial speed of 1
+        ship = new Ship(0, 1, 10, 0, 50, 1, 0);
+        rum = new Rum(1, 1, 11, 30);
+        /*
+        BOARD
+         */
+        path = ship.bestPath(rum.getCoord(), ships, barrels, mines, cannonballs);
+        moves = path.getMoves();
+        assertEquals(1, moves.size());
+        assertEquals(Ship.Action.PORT, moves.get(0));
     }
 
     @Test

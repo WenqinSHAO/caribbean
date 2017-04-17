@@ -34,8 +34,9 @@ class OffsetCoord {
     // "odd-r" horizontal layout
     private final static int[][] DIRECTIONS_EVEN = new int[][]{{1, 0}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}};
     private final static int[][] DIRECTIONS_ODD = new int[][]{{1, 0}, {1, -1}, {0, -1}, {-1, 0}, {0, 1}, {1, 1}};
-    private static final int MAP_WIDTH = 23;
-    private static final int MAP_HEIGHT = 21;
+    public static final int MAP_WIDTH = 23;
+    public static final int MAP_HEIGHT = 21;
+    public static OffsetCoord MAP_CENTER = new OffsetCoord(MAP_WIDTH/2, MAP_HEIGHT/2);
 
     private int col;
     private int row;
@@ -148,7 +149,7 @@ class StatusActionPair {
     }
 }
 
-class StatusPriorityPair {
+class StatusPriorityPair implements Comparable<StatusPriorityPair> {
     private Ship status;
     private int priority;
 
@@ -165,18 +166,16 @@ class StatusPriorityPair {
         return priority;
     }
 
-    public static Comparator<StatusPriorityPair> GainComparator = new Comparator<StatusPriorityPair>() {
-        @Override
-        public int compare(StatusPriorityPair o1, StatusPriorityPair o2) {
-            if (o1.getPriority() > o2.getPriority()) {
-                return -1;
-            }
-            if (o1.getPriority() < o2.getPriority()) {
-                return 1;
-            }
-            return 0;
+    @Override
+    public int compareTo(StatusPriorityPair o) {
+        if (getPriority() > o.getPriority()) {
+            return -1;
         }
-    };
+        if (getPriority() < o.getPriority()) {
+            return 1;
+        }
+        return 0;
+    }
 }
 
 class Entity {
@@ -279,7 +278,7 @@ class Cannonball extends Entity {
 }
 
 
-class ShipMoveStatus extends Entity{
+class ShipMoveStatus extends Entity {
     private int speed;
     private int direction;
 
@@ -322,7 +321,7 @@ class Ship extends Entity {
     public static final int MAX_SHIP_QUANT = 100;
 
     public static enum Action {
-        FASTER, SLOWER, PORT, STARBOARD, FIRE, MINE, EMPTY
+        FASTER, SLOWER, PORT, STARBOARD, MINE, EMPTY// , FIRE,
     }
 
     private int owner;
@@ -410,6 +409,7 @@ class Ship extends Entity {
 
     /**
      * compute new coordinates based on new direction and new position
+     *
      * @return bow, position and stern positions
      */
     public List<OffsetCoord> getNewPositions() {
@@ -468,9 +468,9 @@ class Ship extends Entity {
         this.setNewDirection(-1);
     }
 
-    public boolean overlap(Entity entity) {
+    public boolean overlap(OffsetCoord location) {
         List<OffsetCoord> coords = getPositions();
-        return coords.contains(entity.getCoord());
+        return coords.contains(location);
     }
 
     public boolean overlap(Ship entity) {
@@ -516,21 +516,21 @@ class Ship extends Entity {
         }
     }
 
-    public MoveSequence bestPath(Rum t, Iterable<Ship> ships, Iterable<Rum> rums, Iterable<Mine> mines, Iterable<Cannonball> balls) {
+    public MoveSequence bestPath(OffsetCoord target, Iterable<Ship> ships, Iterable<Rum> rums, Iterable<Mine> mines, Iterable<Cannonball> balls) {
         Hashtable<ShipMoveStatus, Integer> gain = new Hashtable<>();
         Hashtable<Ship, StatusActionPair> lastHop = new Hashtable<>();
-        PriorityQueue<StatusPriorityPair> frontier = new PriorityQueue<>(10, StatusPriorityPair.GainComparator);
+        PriorityQueue<StatusPriorityPair> frontier = new PriorityQueue<>(10);
         boolean reached = false;
 
         gain.put(this.getMoveStatus(), 0);
         lastHop.put(this, new StatusActionPair(this, Action.EMPTY));
-        int iniPriority = 0 - this.getCoord().distance(t.getCoord());
+        int iniPriority = 0 - this.getCoord().distance(target);
         frontier.add(new StatusPriorityPair(this, iniPriority));
 
         Ship st = this;
         while (!frontier.isEmpty()) {
             st = frontier.poll().getStatus();
-            if (st.overlap(t)) {
+            if (st.overlap(target)) {
                 reached = true;
                 break;
             }
@@ -545,7 +545,7 @@ class Ship extends Entity {
                     if (!gain.containsKey(nst.getMoveStatus()) || nstGain > gain.get(nst.getMoveStatus())) {
                         gain.put(nst.getMoveStatus(), nstGain);
                         lastHop.put(nst, new StatusActionPair(st, mv));
-                        int priority = nstGain - nst.getCoord().distance(t.getCoord());
+                        int priority = nstGain - nst.getCoord().distance(target);
                         frontier.add(new StatusPriorityPair(nst, priority));
                     }
                 }
@@ -553,7 +553,7 @@ class Ship extends Entity {
         }
 
         if (reached) {
-            int bestGain = t.getQuant() + gain.get(st.getMoveStatus());
+            int bestGain = gain.get(st.getMoveStatus());
             List<Action> moves = new ArrayList<>();
             while (lastHop.get(st).getAction() != Action.EMPTY) {
                 moves.add(lastHop.get(st).getAction());
@@ -561,7 +561,9 @@ class Ship extends Entity {
             }
             Collections.reverse(moves);
             return new MoveSequence(bestGain, moves);
-        } else return new MoveSequence(0, new ArrayList<Action>());
+        } else {
+            return new MoveSequence(0, new ArrayList<Action>());
+        }
     }
 
     private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
@@ -708,22 +710,20 @@ class Player {
 
             for (int i = 0; i < myShipCount; i++) {
                 Ship ship = ourships.get(i);
-                int max_gain = 0;
-                List<Ship.Action> best_mv = new ArrayList<>();
+                int maxGain = Integer.MIN_VALUE;
+                List<Ship.Action> bestMv = new ArrayList<>();
                 for (Rum rum : rums) {
-                    MoveSequence mv = ship.bestPath(rum, otherships, rums, mines, cannonballs);
-                    if (mv.getGain() > max_gain) {
-                        max_gain = mv.getGain();
-                        best_mv = mv.getMoves();
+                    MoveSequence mv = ship.bestPath(rum.getCoord(), otherships, rums, mines, cannonballs);
+                    if (mv.getGain() > maxGain) {
+                        maxGain = mv.getGain() + rum.getQuant();
+                        bestMv = mv.getMoves();
                     }
                 }
-                if (best_mv.isEmpty()) {
-                    System.out.println("WAIT");
+                if (maxGain < 0) {
+                    System.out.println("MOVE " + OffsetCoord.MAP_CENTER.getCol() + " " + OffsetCoord.MAP_CENTER.getRow());
                 } else {
-                    System.out.println(best_mv.get(0)); // Any valid action, such as "WAIT" or "MOVE x y"
+                    System.out.println(bestMv.get(0)); // Any valid action, such as "WAIT" or "MOVE x y"
                 }
-
-
             }
         }
     }
