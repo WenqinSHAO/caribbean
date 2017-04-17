@@ -45,6 +45,16 @@ public class CaribbeanTest {
         OffsetCoord coord2 = new OffsetCoord(12, 10);
         assertEquals(4, coord.distance(coord2));
         assertEquals(5, coord.distance(coord1));
+
+        coord = new OffsetCoord(0, 1);
+        coord1 = new OffsetCoord(1, 3);
+        assertEquals(2, coord.distance(coord1));
+
+        coord1 = new OffsetCoord(2, 3);
+        assertEquals(3, coord.distance(coord1));
+
+        coord1 = new OffsetCoord(3, 4);
+        assertEquals(4, coord.distance(coord1));
     }
 
     @Test
