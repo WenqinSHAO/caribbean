@@ -715,7 +715,7 @@ class Player {
                 for (Rum rum : rums) {
                     MoveSequence mv = ship.bestPath(rum.getCoord(), otherships, rums, mines, cannonballs);
                     if (mv.getGain() > maxGain) {
-                        maxGain = mv.getGain() + rum.getQuant();
+                        maxGain = mv.getGain();
                         bestMv = mv.getMoves();
                     }
                 }
