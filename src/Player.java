@@ -268,12 +268,17 @@ class Mine extends Entity {
 }
 
 class Cannonball extends Entity {
-    public Cannonball(int id, int col, int row) {
+
+    private int turntohit;
+
+    public Cannonball(int id, int col, int row, int turntohit) {
         super(id, col, row);
+        this.turntohit = turntohit;
     }
 
-    public Cannonball(int id, OffsetCoord loc) {
+    public Cannonball(int id, OffsetCoord loc, int turntohit) {
         super(id, loc);
+        this.turntohit = turntohit;
     }
 }
 
@@ -704,6 +709,7 @@ class Player {
                         mines.add(new Mine(entityId, x, y));
                         break;
                     case "CANNONBALL":
+                        cannonballs.add(new Cannonball(entityId, x, y, arg2));
                         break;
                 }
             }
