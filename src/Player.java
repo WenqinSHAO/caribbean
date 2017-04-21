@@ -36,7 +36,7 @@ class OffsetCoord {
     private final static int[][] DIRECTIONS_ODD = new int[][]{{1, 0}, {1, -1}, {0, -1}, {-1, 0}, {0, 1}, {1, 1}};
     public static final int MAP_WIDTH = 23;
     public static final int MAP_HEIGHT = 21;
-    public static OffsetCoord MAP_CENTER = new OffsetCoord(MAP_WIDTH/2, MAP_HEIGHT/2);
+    public static OffsetCoord MAP_CENTER = new OffsetCoord(MAP_WIDTH / 2, MAP_HEIGHT / 2);
 
     private int col;
     private int row;
@@ -152,10 +152,12 @@ class StatusActionPair {
 class StatusPriorityPair implements Comparable<StatusPriorityPair> {
     private Ship status;
     private int priority;
+    private int turnCounter;
 
-    public StatusPriorityPair(Ship status, int priority) {
+    public StatusPriorityPair(Ship status, int priority, int turnCounter) {
         this.status = status;
         this.priority = priority;
+        this.turnCounter = turnCounter;
     }
 
     public Ship getStatus() {
@@ -164,6 +166,14 @@ class StatusPriorityPair implements Comparable<StatusPriorityPair> {
 
     public int getPriority() {
         return priority;
+    }
+
+    public int getTurnCounter() {
+        return turnCounter;
+    }
+
+    public void setTurnCounter(int turnCounter) {
+        this.turnCounter = turnCounter;
     }
 
     @Override
@@ -269,16 +279,38 @@ class Mine extends Entity {
 
 class Cannonball extends Entity {
 
-    private int turntohit;
+    private int initialRemainingTurns;
+    private int remainingTurns;
+    private int ownerID;
 
-    public Cannonball(int id, int col, int row, int turntohit) {
+    public Cannonball(int id, int col, int row, int iniT, int ownerID) {
         super(id, col, row);
-        this.turntohit = turntohit;
+        this.initialRemainingTurns = iniT;
+        this.ownerID = ownerID;
+        this.remainingTurns = -1;
     }
 
-    public Cannonball(int id, OffsetCoord loc, int turntohit) {
+    public Cannonball(int id, OffsetCoord loc, int iniT, int ownerID) {
         super(id, loc);
-        this.turntohit = turntohit;
+        this.initialRemainingTurns = iniT;
+        this.ownerID = ownerID;
+        this.remainingTurns = -1;
+    }
+
+    public int getInitialRemainingTurns() {
+        return initialRemainingTurns;
+    }
+
+    public int getOwnerID() {
+        return ownerID;
+    }
+
+    public void setRemainingTurns(int remainingTurns) {
+        this.remainingTurns = remainingTurns;
+    }
+
+    public int getRemainingTurns() {
+        return remainingTurns;
     }
 }
 
@@ -530,28 +562,36 @@ class Ship extends Entity {
         gain.put(this.getMoveStatus(), 0);
         lastHop.put(this, new StatusActionPair(this, Action.EMPTY));
         int iniPriority = 0 - this.getCoord().distance(target);
-        frontier.add(new StatusPriorityPair(this, iniPriority));
+        frontier.add(new StatusPriorityPair(this, iniPriority, 0));
 
         Ship st = this;
+        StatusPriorityPair topSP = new StatusPriorityPair(this, iniPriority, 0);
         while (!frontier.isEmpty()) {
-            st = frontier.poll().getStatus();
+            // get the Ship status with highest priority
+            topSP = frontier.poll();
+            st = topSP.getStatus();
+            // if the Ship status overlaps with target, then regarded as arrived
             if (st.overlap(target)) {
                 reached = true;
                 break;
             }
-            for (Action mv : Action.values()) {
+            for (Action mv : Action.values()) { // iterate over all possible moves for the next turn
                 Ship nst = new Ship(st);
-                nst.damage(1);
-                nst.applyAction(mv);
+                nst.damage(1); // constant cost each turn
+                nst.applyAction(mv); // update ship speed and direction based on move
+                for (Cannonball b : balls) { // update cannon ball's remaining turn by the top Ship status turn count from initial position
+                    b.setRemainingTurns(b.getInitialRemainingTurns()-topSP.getTurnCounter() - 1);
+                }
+                // in move() and rotate(), the damage related to cannon ball is calculated from remainingTurns instead of initialRemainingTurns
                 nst.move(ships, mines, rums, balls);
                 nst.rotate(ships, mines, rums, balls);
-                if (nst.quant > 0) {
-                    int nstGain = nst.quant - this.quant;
+                if (nst.quant > 0) { // only continue if the remaining rum number is positive
+                    int nstGain = nst.quant - this.quant; // the gain in terms of rum after move
                     if (!gain.containsKey(nst.getMoveStatus()) || nstGain > gain.get(nst.getMoveStatus())) {
                         gain.put(nst.getMoveStatus(), nstGain);
                         lastHop.put(nst, new StatusActionPair(st, mv));
                         int priority = nstGain - nst.getCoord().distance(target);
-                        frontier.add(new StatusPriorityPair(nst, priority));
+                        frontier.add(new StatusPriorityPair(nst, priority, topSP.getTurnCounter()+1));
                     }
                 }
             }
@@ -709,7 +749,7 @@ class Player {
                         mines.add(new Mine(entityId, x, y));
                         break;
                     case "CANNONBALL":
-                        cannonballs.add(new Cannonball(entityId, x, y, arg2));
+                        cannonballs.add(new Cannonball(entityId, x, y, arg2, arg1));
                         break;
                 }
             }
