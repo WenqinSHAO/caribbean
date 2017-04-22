@@ -823,7 +823,7 @@ class Player {
                         player.addMine(new Mine(entityId, x, y));
                         break;
                     case "CANNONBALL":
-                        cannonballs.add(new Cannonball(entityId, x, y, arg2, arg1));
+                        player.addCannonball(new Cannonball(entityId, x, y, arg2, arg1));
                         break;
                 }
             }
