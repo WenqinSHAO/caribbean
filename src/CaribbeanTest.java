@@ -3,7 +3,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -63,7 +65,7 @@ public class CaribbeanTest {
         addShip(ship);
         Ship expect = new Ship(ship);
         expect.setSpeed(2);
-        ship.applyAction(Ship.Action.FASTER);
+        ship.applyAction(MoveAction.FASTER);
         assertEquals(expect, ship);
         ship.move(ships, mines, barrels, cannonballs);
         expect.setDirection(0);
@@ -75,7 +77,7 @@ public class CaribbeanTest {
 
         ship = new Ship(0, 11, 10, 0, 50, 2, 0);
         expect = new Ship(ship);
-        ship.applyAction(Ship.Action.FASTER);
+        ship.applyAction(MoveAction.FASTER);
         assertEquals(expect, ship);
     }
 
@@ -84,7 +86,7 @@ public class CaribbeanTest {
         Ship ship = new Ship(0, 11, 10, 0, 50, 2, 0);
         Ship expect = new Ship(ship);
         expect.setSpeed(1);
-        ship.applyAction(Ship.Action.SLOWER);
+        ship.applyAction(MoveAction.SLOWER);
         assertEquals(expect, ship);
         ship.move(ships, mines, barrels, cannonballs);
         expect.setDirection(0);
@@ -97,14 +99,14 @@ public class CaribbeanTest {
         ship = new Ship(0, 11, 10, 0, 50, 0, 0);
         expect = new Ship(ship);
         expect.setSpeed(0);
-        ship.applyAction(Ship.Action.SLOWER);
+        ship.applyAction(MoveAction.SLOWER);
         assertEquals(expect, ship);
     }
 
     @Test
     public void test_port() {
         Ship ship = new Ship(0, 11, 10, 0, 50, 2, 0);
-        ship.applyAction(Ship.Action.PORT);
+        ship.applyAction(MoveAction.PORT);
         assertEquals(0, ship.getDirection());
         ship.move(ships, mines, barrels, cannonballs);
         ship.rotate(ships, mines, barrels, cannonballs);
@@ -117,7 +119,7 @@ public class CaribbeanTest {
     @Test
     public void test_starboard() {
         Ship ship = new Ship(0, 11, 10, 0, 50, 2, 0);
-        ship.applyAction(Ship.Action.STARBOARD);
+        ship.applyAction(MoveAction.STARBOARD);
         assertEquals(0, ship.getDirection());
         ship.move(ships, mines, barrels, cannonballs);
         ship.rotate(ships, mines, barrels, cannonballs);
@@ -135,7 +137,7 @@ public class CaribbeanTest {
         (11, 10) - FASTER - (12, 10) - FASTER - (14, 10) - WAIT - (16, 10)
          */
         MoveSequence path = ship.bestPath(rum.getCoord(), ships, barrels, mines, cannonballs);
-        List<Ship.Action> moves = path.getMoves();
+        List<MoveAction> moves = path.getMoves();
         assertEquals(3, moves.size());
 
         ship = new Ship(0, 1, 10, 0, 50, 0, 0);
@@ -146,7 +148,7 @@ public class CaribbeanTest {
         path = ship.bestPath(rum.getCoord(), ships, barrels, mines, cannonballs);
         moves = path.getMoves();
         assertEquals(1, moves.size());
-        assertEquals(Ship.Action.STARBOARD, moves.get(0));
+        assertEquals(MoveAction.STARBOARD, moves.get(0));
 
         // Ship has an initial speed of 1
         ship = new Ship(0, 1, 10, 0, 50, 1, 0);
@@ -157,7 +159,15 @@ public class CaribbeanTest {
         path = ship.bestPath(rum.getCoord(), ships, barrels, mines, cannonballs);
         moves = path.getMoves();
         assertEquals(1, moves.size());
-        assertEquals(Ship.Action.PORT, moves.get(0));
+        assertEquals(MoveAction.PORT, moves.get(0));
+    }
+
+    @Test
+    public void test_all_move_actions() {
+        List<MoveActions> allActions = Player.getAllActions();
+        assertEquals(125, allActions.size());
+        Set<MoveActions> actionsSet = new HashSet<>(allActions);
+        assertEquals(125, actionsSet.size());
     }
 
     @Test
