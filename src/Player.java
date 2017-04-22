@@ -476,14 +476,26 @@ class Player {
     }
 
     private class SearchNode {
+
+        private final double w1 = 1D;
+        private final double w2 = 1D;
+        private final double w3 = 1D;
+        private final MoveActions actions;
         private List<Ship> shipStates;
         private SearchNode prev;
-        private int score; // total rum
+        private double score; // total rum
 
-        public SearchNode(final List<Ship> shipStates, final SearchNode prev) {
+
+        public SearchNode(final List<Ship> shipStates, final MoveActions actions, final SearchNode prev) {
             this.shipStates = shipStates;
+            this.actions = actions;
             this.prev = prev;
-            this.score = 0;
+            this.score = 0D;
+            computeScore();
+        }
+
+        public MoveActions getActions() {
+            return actions;
         }
 
         public List<Ship> getShipStates() {
@@ -494,18 +506,62 @@ class Player {
             return prev;
         }
 
-        public void computeScore() {
-
+        private int distanceTo(OffsetCoord coord) {
+            int distance = Integer.MAX_VALUE;
+            for (Ship ship : shipStates) {
+                List<OffsetCoord> positions = ship.getPositions();
+                for (OffsetCoord location : positions) {
+                    int dist = location.distance(coord);
+                    if (dist < distance) {
+                        distance = dist;
+                    }
+                }
+            }
+            return distance;
         }
 
-        public int getScore() {
+        public void computeScore() {
+            // w0 * Current holding rum barrels + w1 * potential rums obtained
+            // - w2 * potential mine and cannonball damage: already computed when apply ship action
+            int holdingRums = 0;
+            for (Ship ship : shipStates) {
+                holdingRums += ship.getQuant();
+            }
+            score += holdingRums * w1;
+
+            int potentialRum = 0;
+            for (Rum rum : getRums()) {
+                potentialRum += rum.getQuant() - distanceTo(rum.getCoord());
+            }
+            score += potentialRum * w2;
+        }
+
+        public double getScore() {
             return score;
         }
     }
 
     SearchNode findBest(final List<Ship> actualState) {
-        SearchNode current = new SearchNode(actualState, null);
-        return current;
+        SearchNode current = new SearchNode(actualState, null, null);
+        List<Ship> ships = current.getShipStates();
+        SearchNode best = null;
+        double top = Double.NEGATIVE_INFINITY;
+        for (MoveActions actions : getAllActions()) {
+            SearchNode node = applyActions(current, actions);
+            if (node.getScore() > top) {
+                top = node.getScore();
+                best = node;
+            }
+        }
+        if (best == null) {
+            // Failed to find best, wait at the current position
+            best = new SearchNode(actualState, new MoveActions(new MoveAction[]{MoveAction.WAIT, MoveAction.WAIT, MoveAction.WAIT}), null);
+        }
+        return best;
+    }
+
+    private SearchNode applyActions(SearchNode current, MoveActions actions) {
+        return null;
     }
 
     public List<String> getCommands() {
