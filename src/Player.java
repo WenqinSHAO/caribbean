@@ -505,6 +505,7 @@ class Player {
 
     SearchNode findBest(final List<Ship> actualState) {
         SearchNode current = new SearchNode(actualState, null);
+        return current;
     }
 
     public List<String> getCommands() {
