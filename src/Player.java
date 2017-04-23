@@ -279,6 +279,8 @@ class Mine extends Entity {
 
 class Cannonball extends Entity {
 
+    public static final int LOW_DAMAGE = 25;
+    public static final int HIGH_DAMAGE = 50;
     private int initialRemainingTurns;
     private int remainingTurns;
     private int ownerID;
@@ -501,7 +503,7 @@ class Ship extends Entity {
 
         // Apply rotation
         this.setDirection(this.getNewDirection());
-        checkCollisions(mines, barrels, cannonballs);
+        checkCollisions(mines, barrels, cannonballs, true);
         this.setNewDirection(-1);
     }
 
@@ -611,7 +613,7 @@ class Ship extends Entity {
         }
     }
 
-    private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
+    private void checkCollisions(final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs, boolean checkCannonballs) {
 
         List<OffsetCoord> positions = getPositions();
         // Compute potential gains
@@ -630,6 +632,23 @@ class Ship extends Entity {
                 damage(Mine.MINE_DAMAGE);
             }
             // TODO: to see whether mine will explode
+        }
+
+        if (checkCannonballs) {
+            for (Iterator<Cannonball> it = cannonballs.iterator(); it.hasNext(); ) {
+                Cannonball cannonball = it.next();
+                if (1 == cannonball.getRemainingTurns()) {
+                    OffsetCoord coord = cannonball.getCoord();
+                    OffsetCoord bow = positions.get(0);
+                    OffsetCoord location = positions.get(1);
+                    OffsetCoord stern = positions.get(2);
+                    if (bow.equals(coord) || stern.equals(coord)) {
+                        this.damage(Cannonball.LOW_DAMAGE);
+                    } else if (location.equals(coord)) {
+                        this.damage(Cannonball.HIGH_DAMAGE);
+                    }
+                }
+            }
         }
     }
 
@@ -663,7 +682,7 @@ class Ship extends Entity {
             }
 
             this.setLocation(this.getNewCoord());
-            this.checkCollisions(mines, barrels, cannonballs);
+            this.checkCollisions(mines, barrels, cannonballs, false);
 
             this.setNewCoord(null);
         }
