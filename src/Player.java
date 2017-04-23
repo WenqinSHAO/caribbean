@@ -143,7 +143,9 @@ class OffsetCoord {
         HashSet<OffsetCoord> coords = new HashSet<>();
         for (CubicCoord cubic : dist6) {
             OffsetCoord coord = cubic.toOffsetCoord();
-            coords.add(coord);
+            if (coord.isInsideMap()) {
+                coords.add(coord);
+            }
         }
         return new ArrayList<>(coords);
     }
