@@ -711,18 +711,105 @@ class Ship extends Entity {
 
 class Player {
 
+    private List<Rum> rums = new ArrayList<>();
+    private List<Ship> ourships = new ArrayList<>();
+    private List<Ship> otherships = new ArrayList<>();
+    private List<Mine> mines = new ArrayList<>();
+    private List<Cannonball> cannonballs = new ArrayList<>();
+
+    public void addRum(Rum rum) {
+        rums.add(rum);
+    }
+
+    public void addOurShip(Ship ship) {
+        ourships.add(ship);
+    }
+
+    public void addEnemyShip(Ship ship) {
+        otherships.add(ship);
+    }
+
+    public void addMine(Mine mine) {
+        mines.add(mine);
+    }
+
+    public void addCannonball(Cannonball cannonball) {
+        cannonballs.add(cannonball);
+    }
+
+    public void clearEntities() {
+        rums.clear();
+        ourships.clear();
+        otherships.clear();
+        mines.clear();
+        cannonballs.clear();
+    }
+
+    public List<Rum> getRums() {
+        return rums;
+    }
+
+    public List<Ship> getOurShips() {
+        return ourships;
+    }
+
+    public List<Ship> getEnemyShips() {
+        return otherships;
+    }
+
+    public List<Mine> getMines() {
+        return mines;
+    }
+
+    public List<Cannonball> getCannonballs() {
+        return cannonballs;
+    }
+
+    public int getOurShipCount() {
+        return ourships.size();
+    }
+
+    public List<String> getCommands() {
+        List<String> commands = new ArrayList<>();
+        int size = getOurShipCount();
+        for (int i = 0; i < size; i++) {
+            // the ship that we handles now
+            Ship ship = ourships.get(i);
+            // others contain all the ship other than the current ship
+            List<Ship> others = new ArrayList<>();
+            List<Ship> copyofOurShips = new ArrayList<>();
+            for (Ship p : ourships) {
+                copyofOurShips.add(new Ship(p));
+            }
+            copyofOurShips.remove(i);
+            others.addAll(copyofOurShips);
+            others.addAll(otherships);
+
+            int maxGain = Integer.MIN_VALUE;
+            List<Ship.Action> bestMv = new ArrayList<>();
+            for (Rum rum : rums) {
+                MoveSequence mv = ship.bestPath(rum.getCoord(), otherships, rums, mines, cannonballs);
+                if (mv.getGain() > maxGain) {
+                    maxGain = mv.getGain() + rum.getQuant();
+                    bestMv = mv.getMoves();
+                }
+            }
+            if (maxGain < 0) {
+                commands.add("MOVE " + OffsetCoord.MAP_CENTER.getCol() + " " + OffsetCoord.MAP_CENTER.getRow());
+            } else {
+                commands.add(bestMv.get(0).name()); // Any valid action, such as "WAIT" or "MOVE x y"
+            }
+        }
+        return commands;
+    }
+
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
 
+        Player player = new Player();
         // game loop
         while (true) {
-            // status
-            List<Rum> rums = new ArrayList<>();
-            List<Ship> ourships = new ArrayList<>();
-            List<Ship> otherships = new ArrayList<>();
-            List<Mine> mines = new ArrayList<>();
-            List<Cannonball> cannonballs = new ArrayList<>();
-
+            player.clearEntities();
             int myShipCount = in.nextInt(); // the number of remaining ships
             int entityCount = in.nextInt(); // the number of entities (e.g. ships, mines or cannonballs)
             for (int i = 0; i < entityCount; i++) {
@@ -737,53 +824,28 @@ class Player {
                 switch (entityType) {
                     case "SHIP":
                         if (arg4 == 1) {
-                            ourships.add(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
+                            player.addOurShip(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
                         } else {
-                            otherships.add(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
+                            player.addEnemyShip(new Ship(entityId, x, y, arg4, arg3, arg2, arg1));
                         }
                         break;
                     case "BARREL":
-                        rums.add(new Rum(entityId, x, y, arg1));
+                        player.addRum(new Rum(entityId, x, y, arg1));
                         break;
                     case "MINE":
-                        mines.add(new Mine(entityId, x, y));
+                        player.addMine(new Mine(entityId, x, y));
                         break;
                     case "CANNONBALL":
-                        cannonballs.add(new Cannonball(entityId, x, y, arg2, arg1));
+                        player.addCannonball(new Cannonball(entityId, x, y, arg2, arg1));
                         break;
                 }
             }
 
-            for (int i = 0; i < myShipCount; i++) {
-                // the ship that we handles now
-                Ship ship = ourships.get(i);
-
-
-                // others contain all the ship other than the current ship
-                List<Ship> others = new ArrayList<>();
-                List<Ship> copyofOurShips = new ArrayList<>();
-                for (Ship p : ourships) {
-                    copyofOurShips.add(new Ship(p));
-                }
-                copyofOurShips.remove(i);
-                others.addAll(copyofOurShips);
-                others.addAll(otherships);
-
-                int maxGain = Integer.MIN_VALUE;
-                List<Ship.Action> bestMv = new ArrayList<>();
-                for (Rum rum : rums) {
-                    MoveSequence mv = ship.bestPath(rum.getCoord(), otherships, rums, mines, cannonballs);
-                    if (mv.getGain() > maxGain) {
-                        maxGain = mv.getGain() + rum.getQuant();
-                        bestMv = mv.getMoves();
-                    }
-                }
-                if (maxGain < 0) {
-                    System.out.println("MOVE " + OffsetCoord.MAP_CENTER.getCol() + " " + OffsetCoord.MAP_CENTER.getRow());
-                } else {
-                    System.out.println(bestMv.get(0)); // Any valid action, such as "WAIT" or "MOVE x y"
-                }
+            List<String> commands = player.getCommands();
+            for (String command : commands) {
+                System.out.println(command);
             }
         }
     }
+
 }
