@@ -794,14 +794,9 @@ class Player {
         for (int i = 0; i < size; i++) {
             // the ship that we handles now
             Ship ship = ourships.get(i);
-            // others contain all the ship other than the current ship
+            // others contain the join of ourships and other ships
             List<Ship> others = new ArrayList<>();
-            List<Ship> copyofOurShips = new ArrayList<>();
-            for (Ship p : ourships) {
-                copyofOurShips.add(new Ship(p));
-            }
-            copyofOurShips.remove(i);
-            others.addAll(copyofOurShips);
+            others.addAll(ourships);
             others.addAll(otherships);
 
             int maxGain = Integer.MIN_VALUE;
@@ -809,15 +804,42 @@ class Player {
             for (Rum rum : rums) {
                 MoveSequence mv = ship.bestPath(rum.getCoord(), otherships, rums, mines, cannonballs);
                 if (mv.getGain() > maxGain) {
-                    maxGain = mv.getGain() + rum.getQuant();
+                    maxGain = mv.getGain(); // no need to add the rum quant here, as it should already be considered in best path
                     bestMv = mv.getMoves();
                 }
             }
             if (maxGain < 0) {
-                commands.add("MOVE " + OffsetCoord.MAP_CENTER.getCol() + " " + OffsetCoord.MAP_CENTER.getRow());
-            } else {
-                commands.add(bestMv.get(0).name()); // Any valid action, such as "WAIT" or "MOVE x y"
+                // case where:
+                // 1. reaching a rum barrel causes lose
+                // 2. there is no rum left over
+                maxGain = Integer.MIN_VALUE;
+                bestMv = new ArrayList<Ship.Action>();
+                bestMv.add(Ship.Action.FASTER);
+                bestMv.add(Ship.Action.MINE);
+                for (Ship.Action firstMV : Ship.Action.values()) {
+                    Ship firstST = new Ship(ship);
+                    firstST.applyAction(firstMV);
+                    firstST.move(others, mines, rums, cannonballs);
+                    firstST.rotate(others, mines, rums, cannonballs);
+                    for (Ship.Action secondMV : Ship.Action.values()){
+                        Ship secondST = new Ship(firstST);
+                        for (Cannonball b : cannonballs) {
+                            // update cannon ball's remaining turn by the top Ship status turn count from initial position
+                            b.setRemainingTurns(b.getInitialRemainingTurns() - 1);
+                        }
+                        secondST.applyAction(secondMV);
+                        secondST.move(others, mines, rums, cannonballs);
+                        secondST.rotate(others, mines, rums, cannonballs);
+                        int gain = secondST.getQuant() - ship.getQuant();
+                        if (gain > maxGain) {
+                            maxGain = gain;
+                            bestMv.set(0, firstMV);
+                            bestMv.set(1, secondMV);
+                        }
+                    }
+                }
             }
+            commands.add(bestMv.get(0).name());
         }
         return commands;
     }
