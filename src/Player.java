@@ -111,6 +111,10 @@ class OffsetCoord {
                 ", row=" + row +
                 '}';
     }
+
+    public List<OffsetCoord> getDist6Points() {
+        return new ArrayList<OffsetCoord>();
+    }
 }
 
 class MoveSequence {
