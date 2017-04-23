@@ -484,7 +484,7 @@ class Ship extends Entity {
 
     public void rotate(final Iterable<Ship> ships, final Iterable<Mine> mines, final Iterable<Rum> barrels, final Iterable<Cannonball> cannonballs) {
         if (this.getNewDirection() == -1) {
-            return;
+            this.setNewDirection(this.getDirection());
         }
         // Check collisions
         boolean collisionDetected = false;
