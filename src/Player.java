@@ -28,31 +28,6 @@ class CubicCoord {
         return (Math.abs(x - t.x) + Math.abs(y - t.y) + Math.abs(z - t.z)) / 2;
     }
 
-    public OffsetCoord toOffsetCoord() {
-        int col = x + (z - (z&1)) / 2;
-        int row = z;
-        return new OffsetCoord(col, row);
-    }
-
-    public List<CubicCoord> getDist6() {
-        List<CubicCoord> res = new ArrayList<>();
-        for (int dx = 0; dx <= 12; dx += 1) {
-            for (int dy = 0; dy <= 12 - dx; dy += 1) {
-                int dz = 12 - dx - dy;
-                if (dz >= 0 && dz <= 12) {
-                    res.add(new CubicCoord(x + dx, y + dy, z + dz));
-                    res.add(new CubicCoord(x + dx, y + dy, z - dz));
-                    res.add(new CubicCoord(x + dx, y - dy, z + dz));
-                    res.add(new CubicCoord(x + dx, y - dy, z - dz));
-                    res.add(new CubicCoord(x - dx, y + dy, z + dz));
-                    res.add(new CubicCoord(x - dx, y + dy, z - dz));
-                    res.add(new CubicCoord(x - dx, y - dy, z + dz));
-                    res.add(new CubicCoord(x - dx, y - dy, z - dz));
-                }
-            }
-        }
-        return res;
-    }
 }
 
 class OffsetCoord {
@@ -139,15 +114,18 @@ class OffsetCoord {
     }
 
     public List<OffsetCoord> getDist6Points() {
-        List<CubicCoord> dist6 = this.toCubic().getDist6();
-        HashSet<OffsetCoord> coords = new HashSet<>();
-        for (CubicCoord cubic : dist6) {
-            OffsetCoord coord = cubic.toOffsetCoord();
-            if (coord.isInsideMap()) {
-                coords.add(coord);
+        List<OffsetCoord> res = new ArrayList<>();
+        for (int dRow = -6; dRow <= 6; dRow += 1) {
+            for (int dCol = -6; dCol <= 6; dCol += 1) {
+                OffsetCoord coord = new OffsetCoord(col + dCol, row + dRow);
+                if (coord.isInsideMap()) {
+                    if (coord.distance(this) == 6) {
+                        res.add(coord);
+                    }
+                }
             }
         }
-        return new ArrayList<>(coords);
+        return res;
     }
 }
 
