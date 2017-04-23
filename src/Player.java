@@ -114,12 +114,13 @@ class OffsetCoord {
     }
 
     public List<OffsetCoord> getDist6Points() {
+        final int RADIUS = 3;
         List<OffsetCoord> res = new ArrayList<>();
-        for (int dRow = -6; dRow <= 6; dRow += 1) {
-            for (int dCol = -6; dCol <= 6; dCol += 1) {
+        for (int dRow = -RADIUS; dRow <= RADIUS; dRow += 1) {
+            for (int dCol = -RADIUS; dCol <= RADIUS; dCol += 1) {
                 OffsetCoord coord = new OffsetCoord(col + dCol, row + dRow);
                 if (coord.isInsideMap()) {
-                    if (coord.distance(this) == 6) {
+                    if (coord.distance(this) == RADIUS) {
                         res.add(coord);
                     }
                 }
@@ -282,6 +283,13 @@ class Rum extends Entity {
     public int getQuant() {
         return quant;
     }
+
+    @Override
+    public String toString() {
+        return "Rum{" +
+                "quant=" + quant +
+                "} " + super.toString();
+    }
 }
 
 class Mine extends Entity {
@@ -290,6 +298,11 @@ class Mine extends Entity {
 
     public Mine(int id, int col, int row) {
         super(id, col, row);
+    }
+
+    @Override
+    public String toString() {
+        return "Mine{} " + super.toString();
     }
 }
 
@@ -329,6 +342,15 @@ class Cannonball extends Entity {
 
     public int getRemainingTurns() {
         return remainingTurns;
+    }
+
+    @Override
+    public String toString() {
+        return "Cannonball{" +
+                "initialRemainingTurns=" + initialRemainingTurns +
+                ", remainingTurns=" + remainingTurns +
+                ", ownerID=" + ownerID +
+                "} " + super.toString();
     }
 }
 
@@ -850,6 +872,17 @@ class Player {
         return commands;
     }
 
+    @Override
+    public String toString() {
+        return "Player{" +
+                "rums=" + rums +
+                ", ourships=" + ourships +
+                ", otherships=" + otherships +
+                ", mines=" + mines +
+                ", cannonballs=" + cannonballs +
+                '}';
+    }
+
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
 
@@ -888,6 +921,7 @@ class Player {
                 }
             }
 
+            System.err.println(player.toString());
             List<String> commands = player.getCommands();
             for (String command : commands) {
                 System.out.println(command);

@@ -168,8 +168,10 @@ public class CaribbeanTest {
     @Test
     public void test_avoid_cannonball() {
         Player p = new Player();
-        p.addOurShip(new Ship(1, 0, 10, 1, 30, 0, 2));
-        p.addCannonball(new Cannonball(2, 0, 10, 2, 2));
+        p.addOurShip(new Ship(0, 22, 18, 1, 75, 1, 2));
+        p.addEnemyShip(new Ship(1, 21, 16, 0, 11, 1, 0));
+        p.addCannonball(new Cannonball(58, 20, 19, 1, 1));
+        p.addMine(new Mine(39, 20, 15));
         List<String> commands = p.getCommands();
     }
 }
