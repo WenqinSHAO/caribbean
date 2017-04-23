@@ -755,7 +755,20 @@ class Player {
             }
 
             for (int i = 0; i < myShipCount; i++) {
+                // the ship that we handles now
                 Ship ship = ourships.get(i);
+
+
+                // others contain all the ship other than the current ship
+                List<Ship> others = new ArrayList<>();
+                List<Ship> copyofOurShips = new ArrayList<>();
+                for (Ship p : ourships) {
+                    copyofOurShips.add(new Ship(p));
+                }
+                copyofOurShips.remove(i);
+                others.addAll(copyofOurShips);
+                others.addAll(otherships);
+
                 int maxGain = Integer.MIN_VALUE;
                 List<Ship.Action> bestMv = new ArrayList<>();
                 for (Rum rum : rums) {
