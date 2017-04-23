@@ -820,30 +820,20 @@ class Player {
                 bestMv = new ArrayList<Ship.Action>();
                 bestMv.add(Ship.Action.FASTER);
                 bestMv.add(Ship.Action.MINE);
-                for (Ship.Action firstMV : Ship.Action.values()) {
-                    Ship firstST = new Ship(ship);
-                    firstST.applyAction(firstMV);
-                    firstST.move(others, mines, rums, cannonballs);
-                    firstST.rotate(others, mines, rums, cannonballs);
-                    for (Ship.Action secondMV : Ship.Action.values()){
-                        Ship secondST = new Ship(firstST);
-                        for (Cannonball b : cannonballs) {
-                            // update cannon ball's remaining turn by the top Ship status turn count from initial position
-                            b.setRemainingTurns(b.getInitialRemainingTurns() - 1);
-                        }
-                        secondST.applyAction(secondMV);
-                        secondST.move(others, mines, rums, cannonballs);
-                        secondST.rotate(others, mines, rums, cannonballs);
-                        int gain = secondST.getQuant() - ship.getQuant();
-                        if (gain > maxGain) {
-                            maxGain = gain;
-                            bestMv.set(0, firstMV);
-                            bestMv.set(1, secondMV);
-                        }
+                List<OffsetCoord> candidates = ship.getCoord().getDist6Points();
+                for (OffsetCoord t : candidates) {
+                    MoveSequence mv = ship.bestPath(t, otherships, rums, mines, cannonballs);
+                    if (mv.getGain() > maxGain) {
+                        maxGain = mv.getGain();
+                        bestMv = mv.getMoves();
                     }
                 }
             }
-            commands.add(bestMv.get(0).name());
+            if (!bestMv.isEmpty()){
+                commands.add(bestMv.get(0).name());
+            } else {
+                commands.add("MOVE " + OffsetCoord.MAP_CENTER.getCol() + " " + OffsetCoord.MAP_CENTER.getRow());
+            }
         }
         return commands;
     }
