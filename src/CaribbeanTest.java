@@ -165,4 +165,11 @@ public class CaribbeanTest {
         //TODO: make a test case for bestPath
     }
 
+    @Test
+    public void test_avoid_cannonball() {
+        Player p = new Player();
+        p.addOurShip(new Ship(1, 0, 10, 1, 30, 0, 2));
+        p.addCannonball(new Cannonball(2, 0, 10, 2, 2));
+        List<String> commands = p.getCommands();
+    }
 }
