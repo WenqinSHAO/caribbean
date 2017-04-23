@@ -808,7 +808,7 @@ class Player {
                     bestMv = mv.getMoves();
                 }
             }
-            if (maxGain < 0) {
+            if (maxGain < 0 || bestMv.size() == 0) {
                 // case where:
                 // 1. reaching a rum barrel causes lose
                 // 2. there is no rum left over
